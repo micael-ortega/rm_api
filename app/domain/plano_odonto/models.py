@@ -22,7 +22,7 @@ class Dependente:
     grau_parentesco: str
     plano_odonto: Optional[str] = None
     flag_plano_saude: Optional[str] = None
-    
+    data_inicio_plano_saude: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -33,12 +33,14 @@ class PlanoOdonto:
 
 
 @dataclass
-class RegistroOdonto:
+class RegistroBeneficioDependente:
     cod_coligada: str
     chapa: str
     nro_depend: str
     cod_plano: str
     flag_inclusao: str = "1"
+    flag_plano_saude: str = "0"
+    data_inicio_plano_saude: str = ""
 
     def to_line(self, separator: str = ";") -> str:
         return separator.join(
@@ -48,5 +50,7 @@ class RegistroOdonto:
                 self.nro_depend,
                 self.cod_plano,
                 self.flag_inclusao,
+                self.flag_plano_saude,
+                self.data_inicio_plano_saude,
             ]
         )

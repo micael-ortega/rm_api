@@ -28,6 +28,13 @@ def _normalize_flag(value: object) -> Optional[str]:
     return flag if flag else None
 
 
+def _normalize_date(value: object) -> Optional[str]:
+    if value is None:
+        return None
+    texto = str(value).strip()
+    return texto if texto else None
+
+
 class DependentesRepository:
     """Provides access to collaborator and dependent data."""
 
@@ -56,6 +63,8 @@ class DependentesRepository:
                     "GRAUPARENTESCO": "grau_parentesco",
                     "PLANO_ODONTO": "plano_odonto",
                     "FLAG_PLANO_SAUDE": "flag_plano_saude",
+                    "DATA_INICIO_PLANO_SAUDE": "data_inicio_plano_saude",
+                    "DTINIASSISTMEDICA": "data_inicio_plano_saude",
                 }
             )
         return self._cache_df
@@ -83,6 +92,9 @@ class DependentesRepository:
         for row in filtrado.itertuples(index=False):
             plano_odonto = _normalize_plano(getattr(row, "plano_odonto", None))
             flag_plano_saude = _normalize_flag(getattr(row, "flag_plano_saude", None))
+            data_inicio_plano_saude = _normalize_date(
+                getattr(row, "data_inicio_plano_saude", None)
+            )
             dependentes.append(
                 Dependente(
                     cod_coligada=row.cod_coligada,
@@ -92,6 +104,7 @@ class DependentesRepository:
                     grau_parentesco=row.grau_parentesco,
                     plano_odonto=plano_odonto,
                     flag_plano_saude=flag_plano_saude,
+                    data_inicio_plano_saude=data_inicio_plano_saude,
                 )
             )
         return dependentes
