@@ -4,13 +4,14 @@ from __future__ import annotations
 
 import tkinter as tk
 from pathlib import Path
+from datetime import datetime
 from tkinter import filedialog, messagebox, Label
 from tkinter import ttk
 import webbrowser
 
 from tkcalendar import DateEntry
 
-from app.domain.plano_odonto import (
+from app.domain.beneficios_planos import (
     DependentesRepository,
     OdontoTxtGenerator,
     PlanoOdonto,
@@ -205,7 +206,7 @@ class OdontoApp(ttk.Frame):
         return f"{base} (Sem plano)"
 
     def _format_plano_label(self, plano: PlanoOdonto) -> str:
-        return f"{plano.codigo} - {plano.descricao}" if plano.descricao else plano.codigo
+        return f"{plano.cod_coligada} - {plano.codigo} - {plano.descricao}" if plano.descricao else plano.codigo
 
     def _sync_planos_combobox(self) -> None:
         self.combo_plano["values"] = [self._format_plano_label(p) for p in self._planos]
@@ -215,6 +216,27 @@ class OdontoApp(ttk.Frame):
             if plano.codigo == codigo:
                 return idx
         return None
+
+    def _parse_data_saude(self, valor: str):
+        if not valor:
+            return None
+        valor = valor.strip()
+        formatos = (
+            "%d/%m/%Y",
+            "%Y-%m-%d",
+            "%Y-%m-%d %H:%M:%S",
+            "%d-%m-%Y",
+            "%d/%m/%Y %H:%M:%S",
+        )
+        for fmt in formatos:
+            try:
+                return datetime.strptime(valor, fmt).date()
+            except ValueError:
+                continue
+        try:
+            return datetime.fromisoformat(valor).date()
+        except ValueError:
+            return None
 
     def _update_plano_state(self) -> None:
         if self.combo_flag.current() == self._flag_inactive_index:
@@ -318,7 +340,11 @@ class OdontoApp(ttk.Frame):
         self.entry_data_saude.delete(0, "end")
         data_saude = (dependente.data_inicio_plano_saude or "").strip()
         if data_saude:
-            self.entry_data_saude.insert(0, data_saude)
+            parsed = self._parse_data_saude(data_saude)
+            if parsed:
+                self.entry_data_saude.set_date(parsed)
+            else:
+                self.entry_data_saude.insert(0, data_saude)
         self._update_plano_state()
 
     def _on_adicionar(self) -> None:
@@ -449,5 +475,3 @@ def main() -> None:
 
 
 __all__ = ["main", "OdontoApp"]
-
-

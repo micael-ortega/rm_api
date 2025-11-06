@@ -8,7 +8,7 @@ from difflib import SequenceMatcher
 import pandas as pd
 
 from app.config import ENV
-from app.domain.plano_odonto.models import Colaborador, Dependente, PlanoOdonto
+from app.domain.beneficios_planos.models import Colaborador, Dependente, PlanoOdonto
 from app.infra.gateways.rm_query import RMQueryGateway
 
 

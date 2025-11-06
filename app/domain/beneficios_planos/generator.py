@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterable
 
-from app.domain.plano_odonto.models import RegistroBeneficioDependente
+from app.domain.beneficios_planos.models import RegistroBeneficioDependente
 
 
 class OdontoTxtGenerator:
