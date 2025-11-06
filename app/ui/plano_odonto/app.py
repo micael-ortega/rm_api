@@ -155,6 +155,18 @@ class OdontoApp(ttk.Frame):
             return f"{base} (Plano atual {dependente.plano_odonto})"
         return f"{base} (Sem plano)"
 
+    def _format_plano_label(self, plano: PlanoOdonto) -> str:
+        return f"{plano.codigo} - {plano.descricao}" if plano.descricao else plano.codigo
+
+    def _sync_planos_combobox(self) -> None:
+        self.combo_plano["values"] = [self._format_plano_label(p) for p in self._planos]
+
+    def _find_plano_index(self, codigo: str) -> int | None:
+        for idx, plano in enumerate(self._planos):
+            if plano.codigo == codigo:
+                return idx
+        return None
+
 
     def _on_buscar_colaborador(self) -> None:
         self._apply_colaborador_filtro(self.entry_busca.get())
@@ -190,10 +202,7 @@ class OdontoApp(ttk.Frame):
         self.combo_dependente.set("")
         self._dependentes_atuais = dependentes
         self._planos = self.planos_repo.listar_planos(colaborador.cod_coligada)
-        self.combo_plano["values"] = [
-            f"{p.cod_coligada} - {p.codigo} - {p.descricao}" if p.descricao else p.codigo
-            for p in self._planos
-        ]
+        self._sync_planos_combobox()
         self.combo_plano.set("")
         self.combo_flag.current(self._flag_active_index)
         self._colaborador_atual = colaborador
@@ -205,22 +214,17 @@ class OdontoApp(ttk.Frame):
         dependente = self._dependentes_atuais[idx]
         codigo_plano = dependente.plano_odonto
         if codigo_plano:
-            valores_planos = list(self.combo_plano["values"])
-            match_index = None
-            for i, label in enumerate(valores_planos):
-                if label.startswith(f"{codigo_plano} "):
-                    match_index = i
-                    break
-                if label == codigo_plano:
-                    match_index = i
-                    break
-            if match_index is not None:
-                self.combo_plano.current(match_index)
-            else:
-                if codigo_plano not in valores_planos:
-                    valores_planos.append(codigo_plano)
-                    self.combo_plano["values"] = valores_planos
-                self.combo_plano.set(codigo_plano)
+            match_index = self._find_plano_index(codigo_plano)
+            if match_index is None:
+                novo_plano = PlanoOdonto(
+                    cod_coligada=dependente.cod_coligada,
+                    codigo=codigo_plano,
+                    descricao="",
+                )
+                self._planos.append(novo_plano)
+                self._sync_planos_combobox()
+                match_index = len(self._planos) - 1
+            self.combo_plano.current(match_index)
             self.combo_flag.current(self._flag_active_index)
         else:
             self.combo_plano.set("")
@@ -242,6 +246,21 @@ class OdontoApp(ttk.Frame):
             return
 
         dependente = self._dependentes_atuais[idx_dep]
+        if idx_plano >= len(self._planos):
+            selected_label = self.combo_plano.get().strip()
+            if not selected_label:
+                messagebox.showwarning("Selecao incompleta", "Selecione uma opcao de plano valida.")
+                return
+            codigo = selected_label.split(" - ")[0]
+            novo_plano = PlanoOdonto(
+                cod_coligada=self._colaborador_atual.cod_coligada,
+                codigo=codigo,
+                descricao="",
+            )
+            self._planos.append(novo_plano)
+            self._sync_planos_combobox()
+            idx_plano = len(self._planos) - 1
+            self.combo_plano.current(idx_plano)
         plano = self._planos[idx_plano]
         flag_label = self.combo_flag.get() or self._flag_options[0]
         flag_inclusao = self._flag_map.get(flag_label, "1")
