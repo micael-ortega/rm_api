@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Optional
 
 
 @dataclass(frozen=True)
@@ -19,10 +20,14 @@ class Dependente:
     numero: str
     nome: str
     grau_parentesco: str
+    plano_odonto: Optional[str] = None
+    flag_plano_saude: Optional[str] = None
+    
 
 
 @dataclass(frozen=True)
 class PlanoOdonto:
+    cod_coligada: str
     codigo: str
     descricao: str
 

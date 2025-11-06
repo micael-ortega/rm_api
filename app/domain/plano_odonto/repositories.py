@@ -12,6 +12,22 @@ from app.domain.plano_odonto.models import Colaborador, Dependente, PlanoOdonto
 from app.infra.gateways.rm_query import RMQueryGateway
 
 
+def _normalize_plano(value: object) -> Optional[str]:
+    if value is None:
+        return None
+    plano = str(value).strip()
+    if not plano or plano == "0":
+        return None
+    return plano
+
+
+def _normalize_flag(value: object) -> Optional[str]:
+    if value is None:
+        return None
+    flag = str(value).strip()
+    return flag if flag else None
+
+
 class DependentesRepository:
     """Provides access to collaborator and dependent data."""
 
@@ -38,6 +54,8 @@ class DependentesRepository:
                     "NRODEPEND": "nro_depend",
                     "DEPENDENTE": "dependente",
                     "GRAUPARENTESCO": "grau_parentesco",
+                    "PLANO_ODONTO": "plano_odonto",
+                    "FLAG_PLANO_SAUDE": "flag_plano_saude",
                 }
             )
         return self._cache_df
@@ -47,9 +65,7 @@ class DependentesRepository:
         if df.empty:
             return []
         grouped = (
-            df.groupby(["cod_coligada", "chapa", "colaborador"])
-            .size()
-            .reset_index()
+            df.groupby(["cod_coligada", "chapa", "colaborador"]).size().reset_index()
         )
         return [
             Colaborador(row.cod_coligada, row.chapa, row.colaborador)
@@ -62,19 +78,23 @@ class DependentesRepository:
         chapa: str,
     ) -> list[Dependente]:
         df = self._ensure_cache()
-        filtrado = df[
-            (df.cod_coligada == cod_coligada) & (df.chapa == chapa)
-        ]
-        return [
-            Dependente(
-                row.cod_coligada,
-                row.chapa,
-                row.nro_depend,
-                row.dependente,
-                row.grau_parentesco,
+        filtrado = df[(df.cod_coligada == cod_coligada) & (df.chapa == chapa)]
+        dependentes: list[Dependente] = []
+        for row in filtrado.itertuples(index=False):
+            plano_odonto = _normalize_plano(getattr(row, "plano_odonto", None))
+            flag_plano_saude = _normalize_flag(getattr(row, "flag_plano_saude", None))
+            dependentes.append(
+                Dependente(
+                    cod_coligada=row.cod_coligada,
+                    chapa=row.chapa,
+                    numero=row.nro_depend,
+                    nome=row.dependente,
+                    grau_parentesco=row.grau_parentesco,
+                    plano_odonto=plano_odonto,
+                    flag_plano_saude=flag_plano_saude,
+                )
             )
-            for row in filtrado.itertuples(index=False)
-        ]
+        return dependentes
 
     def buscar_por_nome(self, termo: str, limite: int = 25) -> list[Colaborador]:
         termo_normalizado = termo.strip().lower()
@@ -123,17 +143,20 @@ class PlanosRepository:
         )
         self._planos: Optional[list[PlanoOdonto]] = None
 
-    def listar_planos(self) -> list[PlanoOdonto]:
+    def listar_planos(self, cod_coligada: Optional[str] = None) -> list[PlanoOdonto]:
         if self._planos is None:
             df = self.gateway.fetch_dataframe(self.query_name)
             df = df.rename(
                 columns={
+                    "CODCOLIGADA": "cod_coligada",
                     "CODIGO": "codigo",
                     "DESCRICAO": "descricao",
                 }
             ).fillna("")
             self._planos = [
-                PlanoOdonto(row.codigo, row.descricao)
+                PlanoOdonto(row.cod_coligada, row.codigo, row.descricao)
                 for row in df.itertuples(index=False)
             ]
-        return list(self._planos)
+        if cod_coligada is None:
+            return list(self._planos)
+        return [plano for plano in self._planos if plano.cod_coligada == cod_coligada]

@@ -11,7 +11,7 @@ from app.domain.plano_odonto.models import RegistroOdonto
 class OdontoTxtGenerator:
     """Export records to a TXT file using the expected semicolon layout."""
 
-    def __init__(self, separator: str = ";", include_header: bool = True) -> None:
+    def __init__(self, separator: str = ";", include_header: bool = False) -> None:
         self.separator = separator
         self.include_header = include_header
 
